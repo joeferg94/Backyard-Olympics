@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Backyard Olympics Manager</title>
   <style>
+    /* Styles */
     :root {
       --bg: #f5f7fb;
       --card: #ffffff;
@@ -489,12 +489,4 @@
     el.generateTeamsBtn.addEventListener('click', generateRandomTeams);
     el.exportBtn.addEventListener('click', exportState);
     el.importBtn.addEventListener('click', () => el.importFile.click());
-    el.importFile.addEventListener('change', importStateFromFile);
-    el.saveLocalBtn.addEventListener('click', saveToBrowser);
-    el.loadLocalBtn.addEventListener('click', loadFromBrowser);
-    el.clearAllBtn.addEventListener('click', resetEverything);
-    el.participantName.addEventListener('keydown', e => { if (e.key === 'Enter') addParticipant(); });
-    el.eventTitle.addEventListener('keydown', e => { if (e.key === 'Enter') addEvent(); });
-
-    function addEvent() {
-      const title
+    el.importFile

@@ -325,7 +325,7 @@
             </table>
           </div>
         </div>
-
+        
         <div class="card">
           <h2>2. Tie-Breaker Hierarchy</h2>
           <div class="muted">Build the priority order used to resolve tied final scores.</div>
@@ -489,4 +489,7 @@
     el.generateTeamsBtn.addEventListener('click', generateRandomTeams);
     el.exportBtn.addEventListener('click', exportState);
     el.importBtn.addEventListener('click', () => el.importFile.click());
-    el.importFile
+    el.importFile.addEventListener('change', importStateFromFile);
+    el.saveLocalBtn.addEventListener('click', saveToBrowser);
+    el.loadLocalBtn.addEventListener('click', loadFromBrowser);
+    el.clearAllBtn.addEventListener('

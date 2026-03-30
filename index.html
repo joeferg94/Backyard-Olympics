@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Backyard Olympics Manager</title>
   <style>
-    /* Styles */
     :root {
       --bg: #f5f7fb;
       --card: #ffffff;
@@ -325,7 +324,7 @@
             </table>
           </div>
         </div>
-        
+
         <div class="card">
           <h2>2. Tie-Breaker Hierarchy</h2>
           <div class="muted">Build the priority order used to resolve tied final scores.</div>
@@ -411,8 +410,6 @@
         </div>
       </div>
     </div>
-
-    <div id="matchups"></div>
   </div>
 
   <script>
@@ -426,11 +423,7 @@
       participantEventCount: {},
       participantEventResults: {},
       eventRawResults: {},
-      teamAssignments: {},
-      matchups: [],
-      currentRound: 0,
-      teamResults: {},
-      teamAdvancement: []
+      teamAssignments: {}
     });
 
     let state = defaultState();
@@ -492,4 +485,599 @@
     el.importFile.addEventListener('change', importStateFromFile);
     el.saveLocalBtn.addEventListener('click', saveToBrowser);
     el.loadLocalBtn.addEventListener('click', loadFromBrowser);
-    el.clearAllBtn.addEventListener('
+    el.clearAllBtn.addEventListener('click', resetEverything);
+    el.participantName.addEventListener('keydown', e => { if (e.key === 'Enter') addParticipant(); });
+    el.eventTitle.addEventListener('keydown', e => { if (e.key === 'Enter') addEvent(); });
+
+    function addEvent() {
+      const title = el.eventTitle.value.trim();
+      if (!title) return alert('Enter an event title.');
+      if (state.events.some(evt => evt.title.toLowerCase() === title.toLowerCase())) {
+        return alert('Event titles must be unique.');
+      }
+
+      const isTeam = el.eventType.value === 'team';
+      const evt = {
+        id: makeId(),
+        title,
+        type: el.eventType.value,
+        scoringType: isTeam ? 'wins' : el.scoringType.value,
+        participantsPerTeam: isTeam ? Math.max(2, Number(el.teamSize.value || 2)) : null
+      };
+
+      state.events.push(evt);
+      el.eventTitle.value = '';
+      syncAll();
+    }
+
+    function addTieBreaker() {
+      const eventId = el.tieBreakerSelect.value;
+      if (!eventId) return;
+      if (state.tieBreakerHierarchy.includes(eventId)) {
+        return alert('That event is already in the tie-breaker hierarchy.');
+      }
+      state.tieBreakerHierarchy.push(eventId);
+      syncAll();
+    }
+
+    function addParticipant() {
+      const name = el.participantName.value.trim();
+      if (!name) return alert('Enter a participant name.');
+      if (state.participants.some(p => p.toLowerCase() === name.toLowerCase())) {
+        return alert('Participant already exists.');
+      }
+      state.participants.push(name);
+      state.participantScores[name] = 0;
+      state.participantEventCount[name] = 0;
+      state.participantEventResults[name] = {};
+      el.participantName.value = '';
+      syncAll();
+    }
+
+    function renderEvents() {
+      el.eventsTableBody.innerHTML = '';
+      if (state.events.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="7" class="muted">No events added yet.</td>';
+        el.eventsTableBody.appendChild(tr);
+        return;
+      }
+
+      state.events.forEach((evt, index) => {
+        const complete = eventHasSavedResults(evt.title);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${escapeHtml(evt.title)}</td>
+          <td>${evt.type}</td>
+          <td>${evt.scoringType}</td>
+          <td>${evt.participantsPerTeam ?? 'N/A'}</td>
+          <td>${complete ? 'Complete' : 'Pending'}</td>
+          <td>
+            <div class="btn-row">
+              <button class="small danger" onclick="removeEventById('${evt.id}')">Remove</button>
+            </div>
+          </td>
+        `;
+        el.eventsTableBody.appendChild(tr);
+      });
+    }
+
+    function renderTieBreakerOptions() {
+      el.tieBreakerSelect.innerHTML = '<option value="">Select event</option>';
+      state.events
+        .filter(evt => !state.tieBreakerHierarchy.includes(evt.id))
+        .forEach(evt => {
+          const opt = document.createElement('option');
+          opt.value = evt.id;
+          opt.textContent = evt.title;
+          el.tieBreakerSelect.appendChild(opt);
+        });
+    }
+
+    function renderTieBreakerList() {
+      el.tieBreakerList.innerHTML = '';
+      if (state.tieBreakerHierarchy.length === 0) {
+        el.tieBreakerList.innerHTML = '<div class="empty" style="width:100%">No tie-breakers set yet.</div>';
+        return;
+      }
+      state.tieBreakerHierarchy.forEach((id, index) => {
+        const evt = state.events.find(e => e.id === id);
+        if (!evt) return;
+        const div = document.createElement('div');
+        div.className = 'pill';
+        div.innerHTML = `
+          <strong>${index + 1}.</strong> ${escapeHtml(evt.title)}
+          <button class="small danger" onclick="removeTieBreakerById('${id}')">Remove</button>
+          ${index > 0 ? `<button class="small ghost" onclick="moveTieBreaker('${id}', -1)">↑</button>` : ''}
+          ${index < state.tieBreakerHierarchy.length - 1 ? `<button class="small ghost" onclick="moveTieBreaker('${id}', 1)">↓</button>` : ''}
+        `;
+        el.tieBreakerList.appendChild(div);
+      });
+    }
+
+    function renderParticipants() {
+      el.participantList.innerHTML = '';
+      if (state.participants.length === 0) {
+        el.participantList.innerHTML = '<div class="empty" style="width:100%">No participants yet.</div>';
+        return;
+      }
+      state.participants.forEach(name => {
+        const div = document.createElement('div');
+        div.className = 'pill';
+        div.innerHTML = `${escapeHtml(name)} <button class="small danger" onclick="removeParticipantByName(${JSON.stringify(name)})">Remove</button>`;
+        el.participantList.appendChild(div);
+      });
+    }
+
+    function renderResultEventOptions() {
+      const current = el.resultEventSelect.value;
+      el.resultEventSelect.innerHTML = '<option value="">Select event</option>';
+      state.events.forEach(evt => {
+        const opt = document.createElement('option');
+        opt.value = evt.id;
+        opt.textContent = evt.title;
+        el.resultEventSelect.appendChild(opt);
+      });
+      if (state.events.some(e => e.id === current)) el.resultEventSelect.value = current;
+    }
+
+    function renderResultInputs() {
+      el.resultEntryArea.innerHTML = '';
+      const evt = state.events.find(e => e.id === el.resultEventSelect.value);
+      if (!evt) {
+        el.resultEntryArea.innerHTML = '<div class="empty">Select an event to record results.</div>';
+        return;
+      }
+      if (state.participants.length === 0) {
+        el.resultEntryArea.innerHTML = '<div class="empty">Add participants first.</div>';
+        return;
+      }
+
+      if (evt.type === 'individual') {
+        const msg = document.createElement('div');
+        msg.className = 'notice';
+        msg.innerHTML = evt.scoringType === 'timed'
+          ? 'Enter times like <strong>2:05</strong> or <strong>2:05.50</strong>. Lower time wins.'
+          : 'Enter numeric scores. Higher score wins.';
+        el.resultEntryArea.appendChild(msg);
+
+        const previous = getPreviousRawResults(evt.title);
+        state.participants.forEach(name => {
+          const label = document.createElement('label');
+          label.textContent = `${name} - Result`;
+          const input = document.createElement('input');
+          input.placeholder = evt.scoringType === 'timed' ? 'MM:SS.xx' : 'Score';
+          input.setAttribute('data-participant', name);
+          const prev = previous.find(x => x.participant === name);
+          if (prev) input.value = prev.raw ?? prev.value ?? '';
+          el.resultEntryArea.appendChild(label);
+          el.resultEntryArea.appendChild(input);
+        });
+      } else {
+        const wrap = document.createElement('div');
+        const previous = getPreviousRawResults(evt.title);
+        const teams = state.teamAssignments[evt.id] || [];
+
+        const msg = document.createElement('div');
+        msg.className = 'notice';
+        msg.innerHTML = 'Team event: use <strong>Generate Random Teams</strong>, then enter each team\'s wins. Participants on stronger teams receive better placement points.';
+        wrap.appendChild(msg);
+
+        if (teams.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty';
+          empty.textContent = 'No teams generated yet for this event.';
+          wrap.appendChild(empty);
+        } else {
+          teams.forEach((team, index) => {
+            const box = document.createElement('div');
+            box.className = 'team-box';
+            const prior = previous.find(x => x.teamIndex === index);
+            box.innerHTML = `
+              <strong>Team ${index + 1}</strong><br>
+              <div class="subtle">${team.map(escapeHtml).join(', ')}</div>
+              <label for="teamWin_${index}">Wins</label>
+              <input id="teamWin_${index}" type="number" min="0" value="${prior ? prior.value : 0}" data-team-index="${index}" />
+            `;
+            wrap.appendChild(box);
+          });
+        }
+        el.resultEntryArea.appendChild(wrap);
+      }
+    }
+
+    function generateRandomTeams() {
+      const evt = state.events.find(e => e.id === el.resultEventSelect.value);
+      if (!evt) return alert('Select a team event first.');
+      if (evt.type !== 'team') return alert('Random teams apply only to team events.');
+      if (state.participants.length < evt.participantsPerTeam) return alert('Not enough participants to form even one team.');
+
+      const shuffled = [...state.participants].sort(() => Math.random() - 0.5);
+      const teams = [];
+      const size = evt.participantsPerTeam;
+      while (shuffled.length >= size) {
+        teams.push(shuffled.splice(0, size));
+      }
+      if (shuffled.length) {
+        if (teams.length === 0) teams.push(shuffled.splice(0));
+        else {
+          shuffled.forEach((p, i) => teams[i % teams.length].push(p));
+        }
+      }
+      state.teamAssignments[evt.id] = teams;
+      renderResultInputs();
+    }
+
+    function saveResultsForEvent() {
+      const evt = state.events.find(e => e.id === el.resultEventSelect.value);
+      if (!evt) return alert('Select an event.');
+      if (state.participants.length === 0) return alert('Add participants first.');
+
+      resetEventImpact(evt.title);
+
+      if (evt.type === 'individual') {
+        const rows = [];
+        for (const participant of state.participants) {
+          const input = document.querySelector(`[data-participant="${cssEscape(participant)}"]`);
+          const raw = input ? input.value.trim() : '';
+          if (!raw) continue;
+          let value;
+          if (evt.scoringType === 'timed') {
+            if (!validateTimeFormat(raw)) return alert(`Invalid time for ${participant}. Use MM:SS or MM:SS.xx`);
+            value = timeToSeconds(raw);
+          } else {
+            value = parseFloat(raw);
+            if (Number.isNaN(value)) return alert(`Invalid numeric score for ${participant}.`);
+          }
+          rows.push({ participant, value, raw });
+        }
+        if (rows.length === 0) return alert('Enter at least one result.');
+
+        rows.sort((a, b) => evt.scoringType === 'timed' ? a.value - b.value : b.value - a.value);
+        state.eventRawResults[evt.title] = rows;
+
+        rows.forEach((entry, index) => {
+          const points = index + 1;
+          state.participantScores[entry.participant] += points;
+          state.participantEventCount[entry.participant] += 1;
+          state.participantEventResults[entry.participant][evt.title] = points;
+        });
+      } else {
+        const teams = state.teamAssignments[evt.id] || [];
+        if (teams.length === 0) return alert('Generate teams first for this event.');
+        const rows = [];
+        for (let i = 0; i < teams.length; i++) {
+          const input = document.querySelector(`[data-team-index="${i}"]`);
+          const value = parseInt((input?.value ?? '0').trim(), 10);
+          if (Number.isNaN(value) || value < 0) return alert(`Invalid wins for Team ${i + 1}.`);
+          rows.push({ teamIndex: i, members: teams[i], value });
+        }
+        rows.sort((a, b) => b.value - a.value);
+        state.eventRawResults[evt.title] = rows;
+
+        rows.forEach((teamRow, index) => {
+          const points = index + 1;
+          teamRow.members.forEach(name => {
+            state.participantScores[name] += points;
+            state.participantEventCount[name] += 1;
+            state.participantEventResults[name][evt.title] = points;
+          });
+        });
+      }
+
+      syncAll();
+      alert('Results saved for this event.');
+    }
+
+    function renderStandings() {
+      el.standingsTableBody.innerHTML = '';
+      el.tieInfo.innerHTML = '';
+
+      if (state.participants.length === 0) {
+        el.standingsTableBody.innerHTML = '<tr><td colspan="5" class="muted">No participants yet.</td></tr>';
+        el.winnerBox.className = 'empty';
+        el.winnerBox.textContent = 'No standings yet.';
+        return;
+      }
+
+      const standings = getResolvedStandings();
+      standings.forEach((entry, index) => {
+        const tr = document.createElement('tr');
+        const tieBreakText = entry.tieBreakerScores.length
+          ? entry.tieBreakerScores.map((v, i) => `TB${i + 1}: ${v === 999 ? 'N/A' : v}`).join(' | ')
+          : '—';
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${escapeHtml(entry.participant)}</td>
+          <td>${state.participantEventCount[entry.participant] || 0}</td>
+          <td>${entry.score}</td>
+          <td>${escapeHtml(tieBreakText)}</td>
+        `;
+        el.standingsTableBody.appendChild(tr);
+      });
+
+      const ties = detectTiesByScore(standings);
+      if (ties.length > 0) {
+        const priority = state.tieBreakerHierarchy
+          .map(id => state.events.find(e => e.id === id)?.title)
+          .filter(Boolean)
+          .join(' → ') || 'No tie-breakers defined';
+        el.tieInfo.innerHTML = `<div class="notice"><strong>Tie-breaker hierarchy applied.</strong><br>${escapeHtml(priority)}</div>`;
+      } else {
+        el.tieInfo.innerHTML = '<div class="success-box"><strong>No unresolved score ties.</strong></div>';
+      }
+
+      const winner = standings[0];
+      if (winner) {
+        el.winnerBox.className = 'success-box';
+        el.winnerBox.innerHTML = `
+          <strong>Overall Leader:</strong> ${escapeHtml(winner.participant)}<br>
+          <span class="subtle">Total score: ${winner.score} | Events: ${state.participantEventCount[winner.participant] || 0}</span>
+        `;
+      }
+    }
+
+    function getResolvedStandings() {
+      const standings = state.participants.map(participant => ({
+        participant,
+        score: state.participantScores[participant] || 0,
+        tieBreakerScores: state.tieBreakerHierarchy.map(eventId => {
+          const evt = state.events.find(e => e.id === eventId);
+          if (!evt) return 999;
+          const value = state.participantEventResults[participant]?.[evt.title];
+          return value === undefined ? 999 : value;
+        })
+      }));
+
+      standings.sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        for (let i = 0; i < Math.max(a.tieBreakerScores.length, b.tieBreakerScores.length); i++) {
+          const av = a.tieBreakerScores[i] ?? 999;
+          const bv = b.tieBreakerScores[i] ?? 999;
+          if (av !== bv) return av - bv;
+        }
+        return a.participant.localeCompare(b.participant);
+      });
+      return standings;
+    }
+
+    function detectTiesByScore(standings) {
+      const ties = [];
+      for (let i = 0; i < standings.length - 1; i++) {
+        if (standings[i].score === standings[i + 1].score) ties.push([standings[i], standings[i + 1]]);
+      }
+      return ties;
+    }
+
+    function resetEventImpact(eventTitle) {
+      for (const participant of state.participants) {
+        const prior = state.participantEventResults[participant]?.[eventTitle];
+        if (prior !== undefined) {
+          state.participantScores[participant] -= prior;
+          state.participantEventCount[participant] -= 1;
+          delete state.participantEventResults[participant][eventTitle];
+        }
+      }
+      delete state.eventRawResults[eventTitle];
+    }
+
+    function removeEventById(eventId) {
+      const evt = state.events.find(e => e.id === eventId);
+      if (!evt) return;
+      if (!confirm(`Remove event "${evt.title}"?`)) return;
+      resetEventImpact(evt.title);
+      delete state.teamAssignments[eventId];
+      state.events = state.events.filter(e => e.id !== eventId);
+      state.tieBreakerHierarchy = state.tieBreakerHierarchy.filter(id => id !== eventId);
+      if (el.resultEventSelect.value === eventId) el.resultEventSelect.value = '';
+      syncAll();
+    }
+
+    function removeParticipantByName(name) {
+      if (!confirm(`Remove participant "${name}"?`)) return;
+      state.participants = state.participants.filter(p => p !== name);
+      delete state.participantScores[name];
+      delete state.participantEventCount[name];
+      delete state.participantEventResults[name];
+
+      for (const title of Object.keys(state.eventRawResults)) {
+        const rows = state.eventRawResults[title];
+        state.eventRawResults[title] = rows.filter(r => r.participant !== name && !(Array.isArray(r.members) && r.members.includes(name)));
+      }
+
+      for (const eventId of Object.keys(state.teamAssignments)) {
+        state.teamAssignments[eventId] = state.teamAssignments[eventId]
+          .map(team => team.filter(member => member !== name))
+          .filter(team => team.length > 0);
+      }
+
+      rebuildScoresFromRawResults();
+      syncAll();
+    }
+
+    function removeTieBreakerById(eventId) {
+      state.tieBreakerHierarchy = state.tieBreakerHierarchy.filter(id => id !== eventId);
+      syncAll();
+    }
+
+    function moveTieBreaker(eventId, direction) {
+      const index = state.tieBreakerHierarchy.indexOf(eventId);
+      if (index < 0) return;
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= state.tieBreakerHierarchy.length) return;
+      const arr = [...state.tieBreakerHierarchy];
+      [arr[index], arr[nextIndex]] = [arr[nextIndex], arr[index]];
+      state.tieBreakerHierarchy = arr;
+      syncAll();
+    }
+
+    function rebuildScoresFromRawResults() {
+      for (const p of state.participants) {
+        state.participantScores[p] = 0;
+        state.participantEventCount[p] = 0;
+        state.participantEventResults[p] = {};
+      }
+
+      state.events.forEach(evt => {
+        const rows = state.eventRawResults[evt.title];
+        if (!rows || rows.length === 0) return;
+
+        if (evt.type === 'individual') {
+          const sorted = [...rows].sort((a, b) => evt.scoringType === 'timed' ? a.value - b.value : b.value - a.value);
+          sorted.forEach((entry, index) => {
+            if (!state.participants.includes(entry.participant)) return;
+            const points = index + 1;
+            state.participantScores[entry.participant] += points;
+            state.participantEventCount[entry.participant] += 1;
+            state.participantEventResults[entry.participant][evt.title] = points;
+          });
+        } else {
+          const sorted = [...rows].sort((a, b) => b.value - a.value);
+          sorted.forEach((teamRow, index) => {
+            const points = index + 1;
+            (teamRow.members || []).forEach(name => {
+              if (!state.participants.includes(name)) return;
+              state.participantScores[name] += points;
+              state.participantEventCount[name] += 1;
+              state.participantEventResults[name][evt.title] = points;
+            });
+          });
+        }
+      });
+    }
+
+    function exportState() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'backyard-olympics-state.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importStateFromFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result || '{}'));
+          state = normalizeImportedState(parsed);
+          syncAll();
+        } catch {
+          alert('Could not import that JSON file.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function saveToBrowser() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      alert('Saved in this browser.');
+    }
+
+    function loadFromBrowser() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return alert('No saved data found in this browser.');
+      try {
+        state = normalizeImportedState(JSON.parse(raw));
+        syncAll();
+      } catch {
+        alert('Saved data could not be loaded.');
+      }
+    }
+
+    function resetEverything() {
+      if (!confirm('Reset everything? This clears events, participants, scores, and saved team assignments in the page state.')) return;
+      state = defaultState();
+      syncAll();
+    }
+
+    function normalizeImportedState(parsed) {
+      const base = defaultState();
+      return {
+        ...base,
+        ...parsed,
+        events: Array.isArray(parsed.events) ? parsed.events : [],
+        tieBreakerHierarchy: Array.isArray(parsed.tieBreakerHierarchy) ? parsed.tieBreakerHierarchy : [],
+        participants: Array.isArray(parsed.participants) ? parsed.participants : [],
+        participantScores: parsed.participantScores || {},
+        participantEventCount: parsed.participantEventCount || {},
+        participantEventResults: parsed.participantEventResults || {},
+        eventRawResults: parsed.eventRawResults || {},
+        teamAssignments: parsed.teamAssignments || {}
+      };
+    }
+
+    function eventHasSavedResults(title) {
+      return !!(state.eventRawResults[title] && state.eventRawResults[title].length);
+    }
+
+    function getPreviousRawResults(title) {
+      const rows = state.eventRawResults[title];
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    function updateStats() {
+      el.statEvents.textContent = String(state.events.length);
+      el.statParticipants.textContent = String(state.participants.length);
+      el.statTieBreakers.textContent = String(state.tieBreakerHierarchy.length);
+      const completed = state.events.filter(evt => eventHasSavedResults(evt.title)).length;
+      el.statCompleted.textContent = String(completed);
+    }
+
+    function syncAll() {
+      renderEvents();
+      renderTieBreakerOptions();
+      renderTieBreakerList();
+      renderParticipants();
+      renderResultEventOptions();
+      renderResultInputs();
+      renderStandings();
+      updateStats();
+    }
+
+    function validateTimeFormat(timeString) {
+      return /^[0-9]{1,2}:[0-5][0-9](\.[0-9]{1,2})?$/.test(timeString);
+    }
+
+    function timeToSeconds(timeString) {
+      const parts = timeString.split(':');
+      if (parts.length !== 2) return null;
+      const minutes = parseInt(parts[0], 10);
+      const seconds = parseFloat(parts[1]);
+      if (Number.isNaN(minutes) || Number.isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) return null;
+      return minutes * 60 + seconds;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function cssEscape(value) {
+      if (window.CSS && CSS.escape) return CSS.escape(value);
+      return String(value).replace(/"/g, '\\"');
+    }
+
+    function makeId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'id_' + Math.random().toString(36).slice(2, 11);
+    }
+
+    window.removeEventById = removeEventById;
+    window.removeParticipantByName = removeParticipantByName;
+    window.removeTieBreakerById = removeTieBreakerById;
+    window.moveTieBreaker = moveTieBreaker;
+
+    syncAll();
+  </script>
+</body>
+</html>

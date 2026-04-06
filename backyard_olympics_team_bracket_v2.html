@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backyard Olympics Manager v2</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #dbe3ee;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --success: #059669;
+      --warn-bg: #fff7d6;
+      --warn-line: #ecd98b;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #60a5fa);
+      color: white;
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      line-height: 1.45;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 14px;
+      backdrop-filter: blur(6px);
+    }
+
+    .stat .label {
+      font-size: 0.82rem;
+      opacity: 0.88;
+      margin-bottom: 4px;
+    }
+
+    .stat .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .card h2, .card h3 { margin: 0 0 10px; }
+    .muted { color: var(--muted); font-size: 0.94rem; }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 6px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    input, select, button, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid #cfd8e3;
+      background: #fff;
+      font: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 3px solid rgba(37, 99, 235, 0.14);
+      border-color: #8bb3ff;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      transition: 0.18s ease;
+    }
+
+    button:hover { background: var(--primary-dark); }
+    button.secondary { background: #64748b; }
+    button.secondary:hover { background: #475569; }
+    button.ghost {
+      background: #eef4ff;
+      color: #174ea6;
+      border: 1px solid #cfe0ff;
+    }
+    button.ghost:hover { background: #e3eeff; }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: #b91c1c; }
+    button.success { background: var(--success); }
+    button.success:hover { background: #047857; }
+    button.small {
+      width: auto;
+      padding: 7px 10px;
+      font-size: 0.86rem;
+      border-radius: 10px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e7edf4;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #f2f6fb; font-size: 0.92rem; }
+    tr:hover td { background: #fafcff; }
+
+    .pill-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #eef4ff;
+      color: #174ea6;
+      border: 1px solid #d5e4ff;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+    }
+
+    .notice {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 10px 0;
+      border: 1px solid var(--warn-line);
+      background: var(--warn-bg);
+      color: #5b4a14;
+    }
+
+    .success-box {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 10px 0;
+      border: 1px solid #a7e4cb;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .section-spacer { margin-top: 14px; }
+    .subtle { font-size: 0.86rem; color: var(--muted); }
+
+    .team-box, .match-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fbfdff;
+      margin-top: 10px;
+    }
+
+    .empty {
+      padding: 18px;
+      border: 1px dashed #ccd8e6;
+      border-radius: 14px;
+      color: var(--muted);
+      text-align: center;
+      background: #fafcff;
+    }
+
+    .scroll-x { overflow-x: auto; }
+    .match-grid { display: grid; gap: 12px; }
+    .match-title { font-weight: 700; margin-bottom: 6px; }
+    .bye-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      border: 1px solid #a7e4cb;
+      color: #065f46;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+    .round-summary {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>Backyard Olympics Manager v2</h1>
+      <p>Build events, define tie-break priority, manage participants, run individual or team events, save progress, and produce final standings with hierarchical tie-breaking.</p>
+      <div class="stats">
+        <div class="stat"><div class="label">Events</div><div class="value" id="statEvents">0</div></div>
+        <div class="stat"><div class="label">Participants</div><div class="value" id="statParticipants">0</div></div>
+        <div class="stat"><div class="label">Tie-Breakers</div><div class="value" id="statTieBreakers">0</div></div>
+        <div class="stat"><div class="label">Completed Events</div><div class="value" id="statCompleted">0</div></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2>1. Event Setup</h2>
+          <div class="muted">Add each event and define whether it is individual or team-based.</div>
+          <div class="row section-spacer">
+            <div>
+              <label for="eventTitle">Event Title</label>
+              <input id="eventTitle" placeholder="Example: Sack Race" />
+            </div>
+            <div>
+              <label for="eventType">Event Type</label>
+              <select id="eventType">
+                <option value="individual">Individual</option>
+                <option value="team">Team</option>
+              </select>
+            </div>
+            <div>
+              <label for="scoringType">Scoring Type</label>
+              <select id="scoringType">
+                <option value="scored">Highest Score Wins</option>
+                <option value="timed">Lowest Time Wins</option>
+              </select>
+            </div>
+            <div>
+              <label for="teamSize">Participants Per Team</label>
+              <input id="teamSize" type="number" min="2" value="2" />
+            </div>
+          </div>
+          <div class="btn-row">
+            <button id="addEventBtn">Add Event</button>
+            <button id="clearAllBtn" class="danger">Reset Everything</button>
+          </div>
+          <div class="scroll-x">
+            <table id="eventsTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Scoring</th>
+                  <th>Team Size</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>2. Tie-Breaker Hierarchy</h2>
+          <div class="muted">Build the priority order used to resolve tied final scores.</div>
+          <div class="row section-spacer">
+            <div>
+              <label for="tieBreakerSelect">Add Event</label>
+              <select id="tieBreakerSelect"></select>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button id="addTieBreakerBtn">Add to Hierarchy</button>
+            </div>
+          </div>
+          <div id="tieBreakerList" class="pill-wrap"></div>
+          <div class="btn-row">
+            <button id="clearTieBreakersBtn" class="secondary small">Clear Tie-Breakers</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>3. Participants</h2>
+          <div class="muted">Participants are reused across events. You can add more before recording results.</div>
+          <div class="row section-spacer">
+            <div>
+              <label for="participantName">Participant Name</label>
+              <input id="participantName" placeholder="Enter participant name" />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button id="addParticipantBtn">Add Participant</button>
+            </div>
+          </div>
+          <div id="participantList" class="pill-wrap"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>4. Record Results</h2>
+          <div class="row">
+            <div>
+              <label for="resultEventSelect">Select Event</label>
+              <select id="resultEventSelect"></select>
+            </div>
+          </div>
+          <div id="resultEntryArea" class="section-spacer"></div>
+          <div class="btn-row">
+            <button id="saveResultsBtn" class="success">Save Results for Event</button>
+            <button id="generateTeamsBtn" class="ghost">Generate Random Teams</button>
+            <button id="createMatchupsBtn" class="ghost">Create Matchups</button>
+            <button id="saveRoundBtn" class="secondary">Save Team Round</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>5. Standings</h2>
+          <div class="btn-row">
+            <button id="refreshStandingsBtn" class="secondary">Refresh Standings</button>
+            <button id="exportBtn" class="ghost">Export JSON</button>
+            <button id="importBtn" class="ghost">Import JSON</button>
+            <button id="saveLocalBtn" class="ghost">Save in Browser</button>
+            <button id="loadLocalBtn" class="ghost">Load Saved</button>
+          </div>
+          <input id="importFile" type="file" accept="application/json" style="display:none" />
+          <div class="scroll-x">
+            <table id="standingsTable">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Participant</th>
+                  <th>Events</th>
+                  <th>Total Score</th>
+                  <th>Tie-Break Scores</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="tieInfo"></div>
+        </div>
+
+        <div class="card">
+          <h3>Final Winner</h3>
+          <div id="winnerBox" class="empty">No standings yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'byo_manager_state_v2';
+
+    const defaultState = () => ({
+      events: [],
+      tieBreakerHierarchy: [],
+      participants: [],
+      participantScores: {},
+      participantEventCount: {},
+      participantEventResults: {},
+      eventRawResults: {},
+      teamAssignments: {},
+      teamBrackets: {}
+    });
+
+    let state = defaultState();
+
+    const el = {
+      eventTitle: document.getElementById('eventTitle'),
+      eventType: document.getElementById('eventType'),
+      scoringType: document.getElementById('scoringType'),
+      teamSize: document.getElementById('teamSize'),
+      addEventBtn: document.getElementById('addEventBtn'),
+      clearAllBtn: document.getElementById('clearAllBtn'),
+      eventsTableBody: document.querySelector('#eventsTable tbody'),
+      tieBreakerSelect: document.getElementById('tieBreakerSelect'),
+      addTieBreakerBtn: document.getElementById('addTieBreakerBtn'),
+      clearTieBreakersBtn: document.getElementById('clearTieBreakersBtn'),
+      tieBreakerList: document.getElementById('tieBreakerList'),
+      participantName: document.getElementById('participantName'),
+      addParticipantBtn: document.getElementById('addParticipantBtn'),
+      participantList: document.getElementById('participantList'),
+      resultEventSelect: document.getElementById('resultEventSelect'),
+      resultEntryArea: document.getElementById('resultEntryArea'),
+      saveResultsBtn: document.getElementById('saveResultsBtn'),
+      generateTeamsBtn: document.getElementById('generateTeamsBtn'),
+      createMatchupsBtn: document.getElementById('createMatchupsBtn'),
+      saveRoundBtn: document.getElementById('saveRoundBtn'),
+      refreshStandingsBtn: document.getElementById('refreshStandingsBtn'),
+      standingsTableBody: document.querySelector('#standingsTable tbody'),
+      tieInfo: document.getElementById('tieInfo'),
+      winnerBox: document.getElementById('winnerBox'),
+      exportBtn: document.getElementById('exportBtn'),
+      importBtn: document.getElementById('importBtn'),
+      importFile: document.getElementById('importFile'),
+      saveLocalBtn: document.getElementById('saveLocalBtn'),
+      loadLocalBtn: document.getElementById('loadLocalBtn'),
+      statEvents: document.getElementById('statEvents'),
+      statParticipants: document.getElementById('statParticipants'),
+      statTieBreakers: document.getElementById('statTieBreakers'),
+      statCompleted: document.getElementById('statCompleted')
+    };
+
+    el.eventType.addEventListener('change', () => {
+      const isTeam = el.eventType.value === 'team';
+      el.teamSize.disabled = !isTeam;
+      el.scoringType.disabled = isTeam;
+    });
+    el.eventType.dispatchEvent(new Event('change'));
+
+    el.addEventBtn.addEventListener('click', addEvent);
+    el.addTieBreakerBtn.addEventListener('click', addTieBreaker);
+    el.clearTieBreakersBtn.addEventListener('click', () => {
+      state.tieBreakerHierarchy = [];
+      syncAll();
+    });
+    el.addParticipantBtn.addEventListener('click', addParticipant);
+    el.resultEventSelect.addEventListener('change', renderResultInputs);
+    el.saveResultsBtn.addEventListener('click', saveResultsForEvent);
+    el.generateTeamsBtn.addEventListener('click', generateRandomTeams);
+    el.createMatchupsBtn.addEventListener('click', createTeamMatchups);
+    el.saveRoundBtn.addEventListener('click', saveTeamRound);
+    el.refreshStandingsBtn.addEventListener('click', renderStandings);
+    el.exportBtn.addEventListener('click', exportState);
+    el.importBtn.addEventListener('click', () => el.importFile.click());
+    el.importFile.addEventListener('change', importStateFromFile);
+    el.saveLocalBtn.addEventListener('click', saveToBrowser);
+    el.loadLocalBtn.addEventListener('click', loadFromBrowser);
+    el.clearAllBtn.addEventListener('click', resetEverything);
+    el.participantName.addEventListener('keydown', e => { if (e.key === 'Enter') addParticipant(); });
+    el.eventTitle.addEventListener('keydown', e => { if (e.key === 'Enter') addEvent(); });
+
+    function addEvent() {
+      const title = el.eventTitle.value.trim();
+      if (!title) return alert('Enter an event title.');
+      if (state.events.some(evt => evt.title.toLowerCase() === title.toLowerCase())) {
+        return alert('Event titles must be unique.');
+      }
+
+      const isTeam = el.eventType.value === 'team';
+      const evt = {
+        id: makeId(),
+        title,
+        type: el.eventType.value,
+        scoringType: isTeam ? 'bracket' : el.scoringType.value,
+        participantsPerTeam: isTeam ? Math.max(2, Number(el.teamSize.value || 2)) : null
+      };
+
+      state.events.push(evt);
+      el.eventTitle.value = '';
+      syncAll();
+    }
+
+    function addTieBreaker() {
+      const eventId = el.tieBreakerSelect.value;
+      if (!eventId) return;
+      if (state.tieBreakerHierarchy.includes(eventId)) {
+        return alert('That event is already in the tie-breaker hierarchy.');
+      }
+      state.tieBreakerHierarchy.push(eventId);
+      syncAll();
+    }
+
+    function addParticipant() {
+      const name = el.participantName.value.trim();
+      if (!name) return alert('Enter a participant name.');
+      if (state.participants.some(p => p.toLowerCase() === name.toLowerCase())) {
+        return alert('Participant already exists.');
+      }
+      state.participants.push(name);
+      state.participantScores[name] = 0;
+      state.participantEventCount[name] = 0;
+      state.participantEventResults[name] = {};
+      el.participantName.value = '';
+      syncAll();
+    }
+
+    function renderEvents() {
+      el.eventsTableBody.innerHTML = '';
+      if (state.events.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="7" class="muted">No events added yet.</td>';
+        el.eventsTableBody.appendChild(tr);
+        return;
+      }
+
+      state.events.forEach((evt, index) => {
+        const complete = eventHasSavedResults(evt.title);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${escapeHtml(evt.title)}</td>
+          <td>${evt.type}</td>
+          <td>${evt.type === 'team' ? 'Bracket' : evt.scoringType}</td>
+          <td>${evt.participantsPerTeam ?? 'N/A'}</td>
+          <td>${complete ? 'Complete' : 'Pending'}</td>
+          <td>
+            <div class="btn-row">
+              <button class="small danger" onclick="removeEventById('${evt.id}')">Remove</button>
+            </div>
+          </td>
+        `;
+        el.eventsTableBody.appendChild(tr);
+      });
+    }
+
+    function renderTieBreakerOptions() {
+      el.tieBreakerSelect.innerHTML = '<option value="">Select event</option>';
+      state.events
+        .filter(evt => !state.tieBreakerHierarchy.includes(evt.id))
+        .forEach(evt => {
+          const opt = document.createElement('option');
+          opt.value = evt.id;
+          opt.textContent = evt.title;
+          el.tieBreakerSelect.appendChild(opt);
+        });
+    }
+
+    function renderTieBreakerList() {
+      el.tieBreakerList.innerHTML = '';
+      if (state.tieBreakerHierarchy.length === 0) {
+        el.tieBreakerList.innerHTML = '<div class="empty" style="width:100%">No tie-breakers set yet.</div>';
+        return;
+      }
+      state.tieBreakerHierarchy.forEach((id, index) => {
+        const evt = state.events.find(e => e.id === id);
+        if (!evt) return;
+        const div = document.createElement('div');
+        div.className = 'pill';
+        div.innerHTML = `
+          <strong>${index + 1}.</strong> ${escapeHtml(evt.title)}
+          <button class="small danger" onclick="removeTieBreakerById('${id}')">Remove</button>
+          ${index > 0 ? `<button class="small ghost" onclick="moveTieBreaker('${id}', -1)">↑</button>` : ''}
+          ${index < state.tieBreakerHierarchy.length - 1 ? `<button class="small ghost" onclick="moveTieBreaker('${id}', 1)">↓</button>` : ''}
+        `;
+        el.tieBreakerList.appendChild(div);
+      });
+    }
+
+    function renderParticipants() {
+      el.participantList.innerHTML = '';
+      if (state.participants.length === 0) {
+        el.participantList.innerHTML = '<div class="empty" style="width:100%">No participants yet.</div>';
+        return;
+      }
+      state.participants.forEach(name => {
+        const div = document.createElement('div');
+        div.className = 'pill';
+        div.innerHTML = `${escapeHtml(name)} <button class="small danger" onclick="removeParticipantByName(${JSON.stringify(name)})">Remove</button>`;
+        el.participantList.appendChild(div);
+      });
+    }
+
+    function renderResultEventOptions() {
+      const current = el.resultEventSelect.value;
+      el.resultEventSelect.innerHTML = '<option value="">Select event</option>';
+      state.events.forEach(evt => {
+        const opt = document.createElement('option');
+        opt.value = evt.id;
+        opt.textContent = evt.title;
+        el.resultEventSelect.appendChild(opt);
+      });
+      if (state.events.some(e => e.id === current)) el.resultEventSelect.value = current;
+    }
+
+    function renderResultInputs() {
+      el.resultEntryArea.innerHTML = '';
+      const evt = getSelectedEvent();
+      if (!evt) {
+        el.resultEntryArea.innerHTML = '<div class="empty">Select an event to record results.</div>';
+        toggleTeamButtons(false);
+        return;
+      }
+      if (state.participants.length === 0) {
+        el.resultEntryArea.innerHTML = '<div class="empty">Add participants first.</div>';
+        toggleTeamButtons(evt.type === 'team');
+        return;
+      }
+
+      toggleTeamButtons(evt.type === 'team');
+
+      if (evt.type === 'individual') {
+        const msg = document.createElement('div');
+        msg.className = 'notice';
+        msg.innerHTML = evt.scoringType === 'timed'
+          ? 'Enter times like <strong>2:05</strong> or <strong>2:05.50</strong>. Lower time wins.'
+          : 'Enter numeric scores. Higher score wins.';
+        el.resultEntryArea.appendChild(msg);
+
+        const previous = getPreviousRawResults(evt.title);
+        state.participants.forEach(name => {
+          const label = document.createElement('label');
+          label.textContent = `${name} - Result`;
+          const input = document.createElement('input');
+          input.placeholder = evt.scoringType === 'timed' ? 'MM:SS.xx' : 'Score';
+          input.setAttribute('data-participant', name);
+          const prev = previous.find(x => x.participant === name);
+          if (prev) input.value = prev.raw ?? prev.value ?? '';
+          el.resultEntryArea.appendChild(label);
+          el.resultEntryArea.appendChild(input);
+        });
+        return;
+      }
+
+      const wrap = document.createElement('div');
+      const teams = state.teamAssignments[evt.id] || [];
+      const bracket = state.teamBrackets[evt.id] || null;
+      const complete = eventHasSavedResults(evt.title);
+
+      const info = document.createElement('div');
+      info.className = 'notice';
+      info.innerHTML = 'Team event flow: <strong>Generate Random Teams</strong> → <strong>Create Matchups</strong> → choose winners for the current round → <strong>Save Team Round</strong> until one champion remains.';
+      wrap.appendChild(info);
+
+      if (teams.length === 0) {
+        wrap.innerHTML += '<div class="empty">No teams generated yet for this event.</div>';
+        el.resultEntryArea.appendChild(wrap);
+        return;
+      }
+
+      const teamsBox = document.createElement('div');
+      teamsBox.className = 'team-box';
+      teamsBox.innerHTML = '<strong>Teams</strong>';
+      teams.forEach((team, index) => {
+        const div = document.createElement('div');
+        div.className = 'round-summary';
+        div.innerHTML = `<strong>Team ${index + 1}</strong>: ${escapeHtml(team.members.join(', '))}`;
+        teamsBox.appendChild(div);
+      });
+      wrap.appendChild(teamsBox);
+
+      if (!bracket) {
+        wrap.innerHTML += '<div class="empty">Teams are ready. Click <strong>Create Matchups</strong> to build the first round.</div>';
+        el.resultEntryArea.appendChild(wrap);
+        return;
+      }
+
+      const round = getCurrentRound(bracket);
+      if (!round) {
+        if (complete) {
+          const placements = getPreviousRawResults(evt.title);
+          const summary = document.createElement('div');
+          summary.className = 'success-box';
+          summary.innerHTML = `<strong>Bracket complete.</strong><br>Champion: ${escapeHtml(bracket.championName || 'Unknown')}`;
+          wrap.appendChild(summary);
+          if (placements.length) {
+            const placeBox = document.createElement('div');
+            placeBox.className = 'team-box';
+            placeBox.innerHTML = '<strong>Final Team Placements</strong>';
+            placements.forEach((row, i) => {
+              const div = document.createElement('div');
+              div.className = 'round-summary';
+              div.innerHTML = `${i + 1}. ${escapeHtml(row.teamName)} — ${escapeHtml((row.members || []).join(', '))}`;
+              placeBox.appendChild(div);
+            });
+            wrap.appendChild(placeBox);
+          }
+        } else {
+          wrap.innerHTML += '<div class="empty">No active round found.</div>';
+        }
+        el.resultEntryArea.appendChild(wrap);
+        return;
+      }
+
+      const roundHeader = document.createElement('div');
+      roundHeader.className = 'success-box';
+      roundHeader.innerHTML = `<strong>Current Round:</strong> ${round.roundNumber}`;
+      wrap.appendChild(roundHeader);
+
+      const matchGrid = document.createElement('div');
+      matchGrid.className = 'match-grid';
+
+      round.matches.forEach((match, index) => {
+        const box = document.createElement('div');
+        box.className = 'match-box';
+        const teamA = getTeamById(evt.id, match.teamAId);
+        const teamB = getTeamById(evt.id, match.teamBId);
+
+        if (match.bye) {
+          box.innerHTML = `
+            <div class="match-title">Match ${index + 1}</div>
+            <div><strong>${escapeHtml(teamA?.name || 'Unknown Team')}</strong></div>
+            <div class="subtle">${escapeHtml((teamA?.members || []).join(', '))}</div>
+            <div class="bye-badge">Bye to next round</div>
+          `;
+        } else {
+          box.innerHTML = `
+            <div class="match-title">Match ${index + 1}</div>
+            <div><strong>${escapeHtml(teamA?.name || 'Unknown Team')}</strong></div>
+            <div class="subtle">${escapeHtml((teamA?.members || []).join(', '))}</div>
+            <div style="margin:8px 0;font-weight:700;">vs</div>
+            <div><strong>${escapeHtml(teamB?.name || 'Unknown Team')}</strong></div>
+            <div class="subtle">${escapeHtml((teamB?.members || []).join(', '))}</div>
+            <label for="winner_${match.id}">Winner</label>
+            <select id="winner_${match.id}" data-match-id="${match.id}">
+              <option value="">Select winner</option>
+              <option value="${match.teamAId}" ${match.winnerId === match.teamAId ? 'selected' : ''}>${escapeHtml(teamA?.name || 'Team A')}</option>
+              <option value="${match.teamBId}" ${match.winnerId === match.teamBId ? 'selected' : ''}>${escapeHtml(teamB?.name || 'Team B')}</option>
+            </select>
+          `;
+        }
+        matchGrid.appendChild(box);
+      });
+
+      wrap.appendChild(matchGrid);
+
+      const summary = document.createElement('div');
+      summary.className = 'round-summary';
+      summary.innerHTML = `Rounds completed: ${bracket.completedRounds.length}. ${complete ? 'This event is finished.' : 'Save this round after all winners are selected.'}`;
+      wrap.appendChild(summary);
+
+      el.resultEntryArea.appendChild(wrap);
+    }
+
+    function toggleTeamButtons(isTeamEvent) {
+      el.generateTeamsBtn.style.display = isTeamEvent ? 'inline-block' : 'none';
+      el.createMatchupsBtn.style.display = isTeamEvent ? 'inline-block' : 'none';
+      el.saveRoundBtn.style.display = isTeamEvent ? 'inline-block' : 'none';
+      el.saveResultsBtn.style.display = isTeamEvent ? 'none' : 'inline-block';
+    }
+
+    function generateRandomTeams() {
+      const evt = getSelectedEvent();
+      if (!evt) return alert('Select a team event first.');
+      if (evt.type !== 'team') return alert('Random teams apply only to team events.');
+      if (state.participants.length < evt.participantsPerTeam) return alert('Not enough participants to form even one team.');
+
+      resetEventImpact(evt.title);
+      delete state.teamBrackets[evt.id];
+
+      const shuffled = [...state.participants].sort(() => Math.random() - 0.5);
+      const groups = [];
+      const size = evt.participantsPerTeam;
+      while (shuffled.length >= size) {
+        groups.push(shuffled.splice(0, size));
+      }
+      if (shuffled.length) {
+        if (groups.length === 0) groups.push(shuffled.splice(0));
+        else shuffled.forEach((p, i) => groups[i % groups.length].push(p));
+      }
+
+      state.teamAssignments[evt.id] = groups.map((members, index) => ({
+        id: makeId(),
+        name: `Team ${index + 1}`,
+        members: [...members]
+      }));
+
+      renderResultInputs();
+    }
+
+    function createTeamMatchups() {
+      const evt = getSelectedEvent();
+      if (!evt || evt.type !== 'team') return alert('Select a team event first.');
+      const teams = state.teamAssignments[evt.id] || [];
+      if (teams.length < 2) return alert('You need at least 2 teams to create matchups.');
+
+      resetEventImpact(evt.title);
+
+      state.teamBrackets[evt.id] = {
+        rounds: [buildRound(teams.map(t => t.id), 1)],
+        completedRounds: [],
+        eliminationOrder: [],
+        championTeamId: null,
+        championName: null
+      };
+
+      renderResultInputs();
+    }
+
+    function buildRound(teamIds, roundNumber) {
+      const shuffled = [...teamIds].sort(() => Math.random() - 0.5);
+      const matches = [];
+      while (shuffled.length > 1) {
+        matches.push({
+          id: makeId(),
+          teamAId: shuffled.shift(),
+          teamBId: shuffled.shift(),
+          winnerId: null,
+          loserId: null,
+          bye: false
+        });
+      }
+      if (shuffled.length === 1) {
+        matches.push({
+          id: makeId(),
+          teamAId: shuffled.shift(),
+          teamBId: null,
+          winnerId: null,
+          loserId: null,
+          bye: true
+        });
+      }
+      return { roundNumber, matches, complete: false };
+    }
+
+    function getCurrentRound(bracket) {
+      return bracket.rounds.find(r => !r.complete) || null;
+    }
+
+    function saveTeamRound() {
+      const evt = getSelectedEvent();
+      if (!evt || evt.type !== 'team') return alert('Select a team event first.');
+      const bracket = state.teamBrackets[evt.id];
+      if (!bracket) return alert('Create matchups first.');
+      if (eventHasSavedResults(evt.title)) return alert('This team event is already complete. Generate teams or create a new bracket to run it again.');
+
+      const round = getCurrentRound(bracket);
+      if (!round) return alert('No active round found.');
+
+      const advancing = [];
+      const eliminatedThisRound = [];
+
+      for (const match of round.matches) {
+        if (match.bye) {
+          match.winnerId = match.teamAId;
+          advancing.push(match.teamAId);
+          continue;
+        }
+
+        const select = document.querySelector(`[data-match-id="${match.id}"]`);
+        const winnerId = select ? select.value : '';
+        if (!winnerId) return alert('Select a winner for every matchup before saving the round.');
+        if (winnerId !== match.teamAId && winnerId !== match.teamBId) return alert('Invalid winner selected.');
+
+        match.winnerId = winnerId;
+        match.loserId = winnerId === match.teamAId ? match.teamBId : match.teamAId;
+        advancing.push(match.winnerId);
+        eliminatedThisRound.push(match.loserId);
+      }
+
+      round.complete = true;
+      bracket.completedRounds.push(round.roundNumber);
+      bracket.eliminationOrder.push(...eliminatedThisRound);
+
+      if (advancing.length === 1) {
+        bracket.championTeamId = advancing[0];
+        const championTeam = getTeamById(evt.id, advancing[0]);
+        bracket.championName = championTeam?.name || 'Champion';
+        finalizeTeamEvent(evt, bracket);
+      } else {
+        bracket.rounds.push(buildRound(advancing, round.roundNumber + 1));
+      }
+
+      syncAll();
+      alert(bracket.championTeamId ? 'Team event complete.' : 'Round saved. Next matchups are ready.');
+    }
+
+    function finalizeTeamEvent(evt, bracket) {
+      resetEventImpact(evt.title);
+
+      const teams = state.teamAssignments[evt.id] || [];
+      const finalOrderIds = [bracket.championTeamId, ...bracket.eliminationOrder.reverse()].filter(Boolean);
+      const rows = finalOrderIds.map(teamId => {
+        const team = teams.find(t => t.id === teamId);
+        return {
+          teamId,
+          teamName: team?.name || 'Unknown Team',
+          members: team?.members || []
+        };
+      });
+
+      state.eventRawResults[evt.title] = rows;
+
+      rows.forEach((row, index) => {
+        const points = index + 1;
+        row.members.forEach(name => {
+          if (!(name in state.participantScores)) return;
+          state.participantScores[name] += points;
+          state.participantEventCount[name] += 1;
+          state.participantEventResults[name][evt.title] = points;
+        });
+      });
+    }
+
+    function saveResultsForEvent() {
+      const evt = getSelectedEvent();
+      if (!evt) return alert('Select an event.');
+      if (evt.type === 'team') return alert('Use Create Matchups and Save Team Round for team events.');
+      if (state.participants.length === 0) return alert('Add participants first.');
+
+      resetEventImpact(evt.title);
+
+      const rows = [];
+      for (const participant of state.participants) {
+        const input = document.querySelector(`[data-participant="${cssEscape(participant)}"]`);
+        const raw = input ? input.value.trim() : '';
+        if (!raw) continue;
+        let value;
+        if (evt.scoringType === 'timed') {
+          if (!validateTimeFormat(raw)) return alert(`Invalid time for ${participant}. Use MM:SS or MM:SS.xx`);
+          value = timeToSeconds(raw);
+        } else {
+          value = parseFloat(raw);
+          if (Number.isNaN(value)) return alert(`Invalid numeric score for ${participant}.`);
+        }
+        rows.push({ participant, value, raw });
+      }
+      if (rows.length === 0) return alert('Enter at least one result.');
+
+      rows.sort((a, b) => evt.scoringType === 'timed' ? a.value - b.value : b.value - a.value);
+      state.eventRawResults[evt.title] = rows;
+
+      rows.forEach((entry, index) => {
+        const points = index + 1;
+        state.participantScores[entry.participant] += points;
+        state.participantEventCount[entry.participant] += 1;
+        state.participantEventResults[entry.participant][evt.title] = points;
+      });
+
+      syncAll();
+      alert('Results saved for this event.');
+    }
+
+    function renderStandings() {
+      el.standingsTableBody.innerHTML = '';
+      el.tieInfo.innerHTML = '';
+
+      if (state.participants.length === 0) {
+        el.standingsTableBody.innerHTML = '<tr><td colspan="5" class="muted">No participants yet.</td></tr>';
+        el.winnerBox.className = 'empty';
+        el.winnerBox.textContent = 'No standings yet.';
+        return;
+      }
+
+      const standings = getResolvedStandings();
+      standings.forEach((entry, index) => {
+        const tr = document.createElement('tr');
+        const tieBreakText = entry.tieBreakerScores.length
+          ? entry.tieBreakerScores.map((v, i) => `TB${i + 1}: ${v === 999 ? 'N/A' : v}`).join(' | ')
+          : '—';
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${escapeHtml(entry.participant)}</td>
+          <td>${state.participantEventCount[entry.participant] || 0}</td>
+          <td>${entry.score}</td>
+          <td>${escapeHtml(tieBreakText)}</td>
+        `;
+        el.standingsTableBody.appendChild(tr);
+      });
+
+      const ties = detectTiesByScore(standings);
+      if (ties.length > 0) {
+        const priority = state.tieBreakerHierarchy
+          .map(id => state.events.find(e => e.id === id)?.title)
+          .filter(Boolean)
+          .join(' → ') || 'No tie-breakers defined';
+        el.tieInfo.innerHTML = `<div class="notice"><strong>Tie-breaker hierarchy applied.</strong><br>${escapeHtml(priority)}</div>`;
+      } else {
+        el.tieInfo.innerHTML = '<div class="success-box"><strong>No unresolved score ties.</strong></div>';
+      }
+
+      const winner = standings[0];
+      if (winner) {
+        el.winnerBox.className = 'success-box';
+        el.winnerBox.innerHTML = `
+          <strong>Overall Leader:</strong> ${escapeHtml(winner.participant)}<br>
+          <span class="subtle">Total score: ${winner.score} | Events: ${state.participantEventCount[winner.participant] || 0}</span>
+        `;
+      }
+    }
+
+    function getResolvedStandings() {
+      const standings = state.participants.map(participant => ({
+        participant,
+        score: state.participantScores[participant] || 0,
+        tieBreakerScores: state.tieBreakerHierarchy.map(eventId => {
+          const evt = state.events.find(e => e.id === eventId);
+          if (!evt) return 999;
+          const value = state.participantEventResults[participant]?.[evt.title];
+          return value === undefined ? 999 : value;
+        })
+      }));
+
+      standings.sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        for (let i = 0; i < Math.max(a.tieBreakerScores.length, b.tieBreakerScores.length); i++) {
+          const av = a.tieBreakerScores[i] ?? 999;
+          const bv = b.tieBreakerScores[i] ?? 999;
+          if (av !== bv) return av - bv;
+        }
+        return a.participant.localeCompare(b.participant);
+      });
+      return standings;
+    }
+
+    function detectTiesByScore(standings) {
+      const ties = [];
+      for (let i = 0; i < standings.length - 1; i++) {
+        if (standings[i].score === standings[i + 1].score) ties.push([standings[i], standings[i + 1]]);
+      }
+      return ties;
+    }
+
+    function resetEventImpact(eventTitle) {
+      for (const participant of state.participants) {
+        const prior = state.participantEventResults[participant]?.[eventTitle];
+        if (prior !== undefined) {
+          state.participantScores[participant] -= prior;
+          state.participantEventCount[participant] -= 1;
+          delete state.participantEventResults[participant][eventTitle];
+        }
+      }
+      delete state.eventRawResults[eventTitle];
+    }
+
+    function removeEventById(eventId) {
+      const evt = state.events.find(e => e.id === eventId);
+      if (!evt) return;
+      if (!confirm(`Remove event "${evt.title}"?`)) return;
+      resetEventImpact(evt.title);
+      delete state.teamAssignments[eventId];
+      delete state.teamBrackets[eventId];
+      state.events = state.events.filter(e => e.id !== eventId);
+      state.tieBreakerHierarchy = state.tieBreakerHierarchy.filter(id => id !== eventId);
+      if (el.resultEventSelect.value === eventId) el.resultEventSelect.value = '';
+      syncAll();
+    }
+
+    function removeParticipantByName(name) {
+      if (!confirm(`Remove participant "${name}"?`)) return;
+      state.participants = state.participants.filter(p => p !== name);
+      delete state.participantScores[name];
+      delete state.participantEventCount[name];
+      delete state.participantEventResults[name];
+
+      for (const title of Object.keys(state.eventRawResults)) {
+        const rows = state.eventRawResults[title];
+        state.eventRawResults[title] = rows.filter(r => r.participant !== name && !(Array.isArray(r.members) && r.members.includes(name)));
+      }
+
+      for (const eventId of Object.keys(state.teamAssignments)) {
+        state.teamAssignments[eventId] = state.teamAssignments[eventId]
+          .map(team => ({ ...team, members: team.members.filter(member => member !== name) }))
+          .filter(team => team.members.length > 0);
+      }
+
+      delete state.teamBrackets;
+      state.teamBrackets = {};
+      rebuildScoresFromRawResults();
+      syncAll();
+    }
+
+    function removeTieBreakerById(eventId) {
+      state.tieBreakerHierarchy = state.tieBreakerHierarchy.filter(id => id !== eventId);
+      syncAll();
+    }
+
+    function moveTieBreaker(eventId, direction) {
+      const index = state.tieBreakerHierarchy.indexOf(eventId);
+      if (index < 0) return;
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= state.tieBreakerHierarchy.length) return;
+      const arr = [...state.tieBreakerHierarchy];
+      [arr[index], arr[nextIndex]] = [arr[nextIndex], arr[index]];
+      state.tieBreakerHierarchy = arr;
+      syncAll();
+    }
+
+    function rebuildScoresFromRawResults() {
+      for (const p of state.participants) {
+        state.participantScores[p] = 0;
+        state.participantEventCount[p] = 0;
+        state.participantEventResults[p] = {};
+      }
+
+      state.events.forEach(evt => {
+        const rows = state.eventRawResults[evt.title];
+        if (!rows || rows.length === 0) return;
+
+        if (evt.type === 'individual') {
+          const sorted = [...rows].sort((a, b) => evt.scoringType === 'timed' ? a.value - b.value : b.value - a.value);
+          sorted.forEach((entry, index) => {
+            if (!state.participants.includes(entry.participant)) return;
+            const points = index + 1;
+            state.participantScores[entry.participant] += points;
+            state.participantEventCount[entry.participant] += 1;
+            state.participantEventResults[entry.participant][evt.title] = points;
+          });
+        } else {
+          rows.forEach((teamRow, index) => {
+            const points = index + 1;
+            (teamRow.members || []).forEach(name => {
+              if (!state.participants.includes(name)) return;
+              state.participantScores[name] += points;
+              state.participantEventCount[name] += 1;
+              state.participantEventResults[name][evt.title] = points;
+            });
+          });
+        }
+      });
+    }
+
+    function exportState() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'backyard-olympics-state.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importStateFromFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(String(reader.result || '{}'));
+          state = normalizeImportedState(parsed);
+          syncAll();
+        } catch {
+          alert('Could not import that JSON file.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function saveToBrowser() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      alert('Saved in this browser.');
+    }
+
+    function loadFromBrowser() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return alert('No saved data found in this browser.');
+      try {
+        state = normalizeImportedState(JSON.parse(raw));
+        syncAll();
+      } catch {
+        alert('Saved data could not be loaded.');
+      }
+    }
+
+    function resetEverything() {
+      if (!confirm('Reset everything? This clears events, participants, scores, teams, and brackets.')) return;
+      state = defaultState();
+      syncAll();
+    }
+
+    function normalizeImportedState(parsed) {
+      const base = defaultState();
+      return {
+        ...base,
+        ...parsed,
+        events: Array.isArray(parsed.events) ? parsed.events : [],
+        tieBreakerHierarchy: Array.isArray(parsed.tieBreakerHierarchy) ? parsed.tieBreakerHierarchy : [],
+        participants: Array.isArray(parsed.participants) ? parsed.participants : [],
+        participantScores: parsed.participantScores || {},
+        participantEventCount: parsed.participantEventCount || {},
+        participantEventResults: parsed.participantEventResults || {},
+        eventRawResults: parsed.eventRawResults || {},
+        teamAssignments: parsed.teamAssignments || {},
+        teamBrackets: parsed.teamBrackets || {}
+      };
+    }
+
+    function eventHasSavedResults(title) {
+      return !!(state.eventRawResults[title] && state.eventRawResults[title].length);
+    }
+
+    function getPreviousRawResults(title) {
+      const rows = state.eventRawResults[title];
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    function updateStats() {
+      el.statEvents.textContent = String(state.events.length);
+      el.statParticipants.textContent = String(state.participants.length);
+      el.statTieBreakers.textContent = String(state.tieBreakerHierarchy.length);
+      const completed = state.events.filter(evt => eventHasSavedResults(evt.title)).length;
+      el.statCompleted.textContent = String(completed);
+    }
+
+    function syncAll() {
+      renderEvents();
+      renderTieBreakerOptions();
+      renderTieBreakerList();
+      renderParticipants();
+      renderResultEventOptions();
+      renderResultInputs();
+      renderStandings();
+      updateStats();
+    }
+
+    function getSelectedEvent() {
+      return state.events.find(e => e.id === el.resultEventSelect.value);
+    }
+
+    function getTeamById(eventId, teamId) {
+      return (state.teamAssignments[eventId] || []).find(team => team.id === teamId) || null;
+    }
+
+    function validateTimeFormat(timeString) {
+      return /^[0-9]{1,2}:[0-5][0-9](\.[0-9]{1,2})?$/.test(timeString);
+    }
+
+    function timeToSeconds(timeString) {
+      const parts = timeString.split(':');
+      if (parts.length !== 2) return null;
+      const minutes = parseInt(parts[0], 10);
+      const seconds = parseFloat(parts[1]);
+      if (Number.isNaN(minutes) || Number.isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) return null;
+      return minutes * 60 + seconds;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function cssEscape(value) {
+      if (window.CSS && CSS.escape) return CSS.escape(value);
+      return String(value).replace(/"/g, '\\"');
+    }
+
+    function makeId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'id_' + Math.random().toString(36).slice(2, 11);
+    }
+
+    window.removeEventById = removeEventById;
+    window.removeParticipantByName = removeParticipantByName;
+    window.removeTieBreakerById = removeTieBreakerById;
+    window.moveTieBreaker = moveTieBreaker;
+
+    syncAll();
+  </script>
+</body>
+</html>

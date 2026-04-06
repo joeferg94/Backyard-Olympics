@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Backyard Olympics Manager</title>
+  <title>Backyard Olympics Manager v2</title>
   <style>
     :root {
       --bg: #f5f7fb;
@@ -101,14 +101,8 @@
       margin-bottom: 18px;
     }
 
-    .card h2, .card h3 {
-      margin: 0 0 10px;
-    }
-
-    .muted {
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
+    .card h2, .card h3 { margin: 0 0 10px; }
+    .muted { color: var(--muted); font-size: 0.94rem; }
 
     .row {
       display: grid;
@@ -188,11 +182,7 @@
       vertical-align: top;
     }
 
-    th {
-      background: #f2f6fb;
-      font-size: 0.92rem;
-    }
-
+    th { background: #f2f6fb; font-size: 0.92rem; }
     tr:hover td { background: #fafcff; }
 
     .pill-wrap {
@@ -232,16 +222,10 @@
       color: #065f46;
     }
 
-    .section-spacer {
-      margin-top: 14px;
-    }
+    .section-spacer { margin-top: 14px; }
+    .subtle { font-size: 0.86rem; color: var(--muted); }
 
-    .subtle {
-      font-size: 0.86rem;
-      color: var(--muted);
-    }
-
-    .team-box {
+    .team-box, .match-box {
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 12px;
@@ -259,13 +243,35 @@
     }
 
     .scroll-x { overflow-x: auto; }
+    .match-grid { display: grid; gap: 12px; }
+    .match-title { font-weight: 700; margin-bottom: 6px; }
+    .bye-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      border: 1px solid #a7e4cb;
+      color: #065f46;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+    .round-summary {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="hero">
-      <h1>Backyard Olympics Manager</h1>
-      <p>Simple browser app based on your pseudocode. Build events, define tie-break priority, manage participants, run individual or team events, save progress, and produce final standings with hierarchical tie-breaking.</p>
+      <h1>Backyard Olympics Manager v2</h1>
+      <p>Build events, define tie-break priority, manage participants, run individual or team events, save progress, and produce final standings with hierarchical tie-breaking.</p>
       <div class="stats">
         <div class="stat"><div class="label">Events</div><div class="value" id="statEvents">0</div></div>
         <div class="stat"><div class="label">Participants</div><div class="value" id="statParticipants">0</div></div>
@@ -374,6 +380,8 @@
           <div class="btn-row">
             <button id="saveResultsBtn" class="success">Save Results for Event</button>
             <button id="generateTeamsBtn" class="ghost">Generate Random Teams</button>
+            <button id="createMatchupsBtn" class="ghost">Create Matchups</button>
+            <button id="saveRoundBtn" class="secondary">Save Team Round</button>
           </div>
         </div>
 
@@ -413,7 +421,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'byo_manager_state_v1';
+    const STORAGE_KEY = 'byo_manager_state_v2';
 
     const defaultState = () => ({
       events: [],
@@ -423,7 +431,8 @@
       participantEventCount: {},
       participantEventResults: {},
       eventRawResults: {},
-      teamAssignments: {}
+      teamAssignments: {},
+      teamBrackets: {}
     });
 
     let state = defaultState();
@@ -447,6 +456,8 @@
       resultEntryArea: document.getElementById('resultEntryArea'),
       saveResultsBtn: document.getElementById('saveResultsBtn'),
       generateTeamsBtn: document.getElementById('generateTeamsBtn'),
+      createMatchupsBtn: document.getElementById('createMatchupsBtn'),
+      saveRoundBtn: document.getElementById('saveRoundBtn'),
       refreshStandingsBtn: document.getElementById('refreshStandingsBtn'),
       standingsTableBody: document.querySelector('#standingsTable tbody'),
       tieInfo: document.getElementById('tieInfo'),
@@ -478,8 +489,10 @@
     el.addParticipantBtn.addEventListener('click', addParticipant);
     el.resultEventSelect.addEventListener('change', renderResultInputs);
     el.saveResultsBtn.addEventListener('click', saveResultsForEvent);
-    el.refreshStandingsBtn.addEventListener('click', renderStandings);
     el.generateTeamsBtn.addEventListener('click', generateRandomTeams);
+    el.createMatchupsBtn.addEventListener('click', createTeamMatchups);
+    el.saveRoundBtn.addEventListener('click', saveTeamRound);
+    el.refreshStandingsBtn.addEventListener('click', renderStandings);
     el.exportBtn.addEventListener('click', exportState);
     el.importBtn.addEventListener('click', () => el.importFile.click());
     el.importFile.addEventListener('change', importStateFromFile);
@@ -501,7 +514,7 @@
         id: makeId(),
         title,
         type: el.eventType.value,
-        scoringType: isTeam ? 'wins' : el.scoringType.value,
+        scoringType: isTeam ? 'bracket' : el.scoringType.value,
         participantsPerTeam: isTeam ? Math.max(2, Number(el.teamSize.value || 2)) : null
       };
 
@@ -550,7 +563,7 @@
           <td>${index + 1}</td>
           <td>${escapeHtml(evt.title)}</td>
           <td>${evt.type}</td>
-          <td>${evt.scoringType}</td>
+          <td>${evt.type === 'team' ? 'Bracket' : evt.scoringType}</td>
           <td>${evt.participantsPerTeam ?? 'N/A'}</td>
           <td>${complete ? 'Complete' : 'Pending'}</td>
           <td>
@@ -624,15 +637,19 @@
 
     function renderResultInputs() {
       el.resultEntryArea.innerHTML = '';
-      const evt = state.events.find(e => e.id === el.resultEventSelect.value);
+      const evt = getSelectedEvent();
       if (!evt) {
         el.resultEntryArea.innerHTML = '<div class="empty">Select an event to record results.</div>';
+        toggleTeamButtons(false);
         return;
       }
       if (state.participants.length === 0) {
         el.resultEntryArea.innerHTML = '<div class="empty">Add participants first.</div>';
+        toggleTeamButtons(evt.type === 'team');
         return;
       }
+
+      toggleTeamButtons(evt.type === 'team');
 
       if (evt.type === 'individual') {
         const msg = document.createElement('div');
@@ -654,117 +671,313 @@
           el.resultEntryArea.appendChild(label);
           el.resultEntryArea.appendChild(input);
         });
-      } else {
-        const wrap = document.createElement('div');
-        const previous = getPreviousRawResults(evt.title);
-        const teams = state.teamAssignments[evt.id] || [];
+        return;
+      }
 
-        const msg = document.createElement('div');
-        msg.className = 'notice';
-        msg.innerHTML = 'Team event: use <strong>Generate Random Teams</strong>, then enter each team\'s wins. Participants on stronger teams receive better placement points.';
-        wrap.appendChild(msg);
+      const wrap = document.createElement('div');
+      const teams = state.teamAssignments[evt.id] || [];
+      const bracket = state.teamBrackets[evt.id] || null;
+      const complete = eventHasSavedResults(evt.title);
 
-        if (teams.length === 0) {
-          const empty = document.createElement('div');
-          empty.className = 'empty';
-          empty.textContent = 'No teams generated yet for this event.';
-          wrap.appendChild(empty);
+      const info = document.createElement('div');
+      info.className = 'notice';
+      info.innerHTML = 'Team event flow: <strong>Generate Random Teams</strong> → <strong>Create Matchups</strong> → choose winners for the current round → <strong>Save Team Round</strong> until one champion remains.';
+      wrap.appendChild(info);
+
+      if (teams.length === 0) {
+        wrap.innerHTML += '<div class="empty">No teams generated yet for this event.</div>';
+        el.resultEntryArea.appendChild(wrap);
+        return;
+      }
+
+      const teamsBox = document.createElement('div');
+      teamsBox.className = 'team-box';
+      teamsBox.innerHTML = '<strong>Teams</strong>';
+      teams.forEach((team, index) => {
+        const div = document.createElement('div');
+        div.className = 'round-summary';
+        div.innerHTML = `<strong>Team ${index + 1}</strong>: ${escapeHtml(team.members.join(', '))}`;
+        teamsBox.appendChild(div);
+      });
+      wrap.appendChild(teamsBox);
+
+      if (!bracket) {
+        wrap.innerHTML += '<div class="empty">Teams are ready. Click <strong>Create Matchups</strong> to build the first round.</div>';
+        el.resultEntryArea.appendChild(wrap);
+        return;
+      }
+
+      const round = getCurrentRound(bracket);
+      if (!round) {
+        if (complete) {
+          const placements = getPreviousRawResults(evt.title);
+          const summary = document.createElement('div');
+          summary.className = 'success-box';
+          summary.innerHTML = `<strong>Bracket complete.</strong><br>Champion: ${escapeHtml(bracket.championName || 'Unknown')}`;
+          wrap.appendChild(summary);
+          if (placements.length) {
+            const placeBox = document.createElement('div');
+            placeBox.className = 'team-box';
+            placeBox.innerHTML = '<strong>Final Team Placements</strong>';
+            placements.forEach((row, i) => {
+              const div = document.createElement('div');
+              div.className = 'round-summary';
+              div.innerHTML = `${i + 1}. ${escapeHtml(row.teamName)} — ${escapeHtml((row.members || []).join(', '))}`;
+              placeBox.appendChild(div);
+            });
+            wrap.appendChild(placeBox);
+          }
         } else {
-          teams.forEach((team, index) => {
-            const box = document.createElement('div');
-            box.className = 'team-box';
-            const prior = previous.find(x => x.teamIndex === index);
-            box.innerHTML = `
-              <strong>Team ${index + 1}</strong><br>
-              <div class="subtle">${team.map(escapeHtml).join(', ')}</div>
-              <label for="teamWin_${index}">Wins</label>
-              <input id="teamWin_${index}" type="number" min="0" value="${prior ? prior.value : 0}" data-team-index="${index}" />
-            `;
-            wrap.appendChild(box);
-          });
+          wrap.innerHTML += '<div class="empty">No active round found.</div>';
         }
         el.resultEntryArea.appendChild(wrap);
+        return;
       }
+
+      const roundHeader = document.createElement('div');
+      roundHeader.className = 'success-box';
+      roundHeader.innerHTML = `<strong>Current Round:</strong> ${round.roundNumber}`;
+      wrap.appendChild(roundHeader);
+
+      const matchGrid = document.createElement('div');
+      matchGrid.className = 'match-grid';
+
+      round.matches.forEach((match, index) => {
+        const box = document.createElement('div');
+        box.className = 'match-box';
+        const teamA = getTeamById(evt.id, match.teamAId);
+        const teamB = getTeamById(evt.id, match.teamBId);
+
+        if (match.bye) {
+          box.innerHTML = `
+            <div class="match-title">Match ${index + 1}</div>
+            <div><strong>${escapeHtml(teamA?.name || 'Unknown Team')}</strong></div>
+            <div class="subtle">${escapeHtml((teamA?.members || []).join(', '))}</div>
+            <div class="bye-badge">Bye to next round</div>
+          `;
+        } else {
+          box.innerHTML = `
+            <div class="match-title">Match ${index + 1}</div>
+            <div><strong>${escapeHtml(teamA?.name || 'Unknown Team')}</strong></div>
+            <div class="subtle">${escapeHtml((teamA?.members || []).join(', '))}</div>
+            <div style="margin:8px 0;font-weight:700;">vs</div>
+            <div><strong>${escapeHtml(teamB?.name || 'Unknown Team')}</strong></div>
+            <div class="subtle">${escapeHtml((teamB?.members || []).join(', '))}</div>
+            <label for="winner_${match.id}">Winner</label>
+            <select id="winner_${match.id}" data-match-id="${match.id}">
+              <option value="">Select winner</option>
+              <option value="${match.teamAId}" ${match.winnerId === match.teamAId ? 'selected' : ''}>${escapeHtml(teamA?.name || 'Team A')}</option>
+              <option value="${match.teamBId}" ${match.winnerId === match.teamBId ? 'selected' : ''}>${escapeHtml(teamB?.name || 'Team B')}</option>
+            </select>
+          `;
+        }
+        matchGrid.appendChild(box);
+      });
+
+      wrap.appendChild(matchGrid);
+
+      const summary = document.createElement('div');
+      summary.className = 'round-summary';
+      summary.innerHTML = `Rounds completed: ${bracket.completedRounds.length}. ${complete ? 'This event is finished.' : 'Save this round after all winners are selected.'}`;
+      wrap.appendChild(summary);
+
+      el.resultEntryArea.appendChild(wrap);
+    }
+
+    function toggleTeamButtons(isTeamEvent) {
+      el.generateTeamsBtn.style.display = isTeamEvent ? 'inline-block' : 'none';
+      el.createMatchupsBtn.style.display = isTeamEvent ? 'inline-block' : 'none';
+      el.saveRoundBtn.style.display = isTeamEvent ? 'inline-block' : 'none';
+      el.saveResultsBtn.style.display = isTeamEvent ? 'none' : 'inline-block';
     }
 
     function generateRandomTeams() {
-      const evt = state.events.find(e => e.id === el.resultEventSelect.value);
+      const evt = getSelectedEvent();
       if (!evt) return alert('Select a team event first.');
       if (evt.type !== 'team') return alert('Random teams apply only to team events.');
       if (state.participants.length < evt.participantsPerTeam) return alert('Not enough participants to form even one team.');
 
+      resetEventImpact(evt.title);
+      delete state.teamBrackets[evt.id];
+
       const shuffled = [...state.participants].sort(() => Math.random() - 0.5);
-      const teams = [];
+      const groups = [];
       const size = evt.participantsPerTeam;
       while (shuffled.length >= size) {
-        teams.push(shuffled.splice(0, size));
+        groups.push(shuffled.splice(0, size));
       }
       if (shuffled.length) {
-        if (teams.length === 0) teams.push(shuffled.splice(0));
-        else {
-          shuffled.forEach((p, i) => teams[i % teams.length].push(p));
-        }
+        if (groups.length === 0) groups.push(shuffled.splice(0));
+        else shuffled.forEach((p, i) => groups[i % groups.length].push(p));
       }
-      state.teamAssignments[evt.id] = teams;
+
+      state.teamAssignments[evt.id] = groups.map((members, index) => ({
+        id: makeId(),
+        name: `Team ${index + 1}`,
+        members: [...members]
+      }));
+
       renderResultInputs();
     }
 
+    function createTeamMatchups() {
+      const evt = getSelectedEvent();
+      if (!evt || evt.type !== 'team') return alert('Select a team event first.');
+      const teams = state.teamAssignments[evt.id] || [];
+      if (teams.length < 2) return alert('You need at least 2 teams to create matchups.');
+
+      resetEventImpact(evt.title);
+
+      state.teamBrackets[evt.id] = {
+        rounds: [buildRound(teams.map(t => t.id), 1)],
+        completedRounds: [],
+        eliminationOrder: [],
+        championTeamId: null,
+        championName: null
+      };
+
+      renderResultInputs();
+    }
+
+    function buildRound(teamIds, roundNumber) {
+      const shuffled = [...teamIds].sort(() => Math.random() - 0.5);
+      const matches = [];
+      while (shuffled.length > 1) {
+        matches.push({
+          id: makeId(),
+          teamAId: shuffled.shift(),
+          teamBId: shuffled.shift(),
+          winnerId: null,
+          loserId: null,
+          bye: false
+        });
+      }
+      if (shuffled.length === 1) {
+        matches.push({
+          id: makeId(),
+          teamAId: shuffled.shift(),
+          teamBId: null,
+          winnerId: null,
+          loserId: null,
+          bye: true
+        });
+      }
+      return { roundNumber, matches, complete: false };
+    }
+
+    function getCurrentRound(bracket) {
+      return bracket.rounds.find(r => !r.complete) || null;
+    }
+
+    function saveTeamRound() {
+      const evt = getSelectedEvent();
+      if (!evt || evt.type !== 'team') return alert('Select a team event first.');
+      const bracket = state.teamBrackets[evt.id];
+      if (!bracket) return alert('Create matchups first.');
+      if (eventHasSavedResults(evt.title)) return alert('This team event is already complete. Generate teams or create a new bracket to run it again.');
+
+      const round = getCurrentRound(bracket);
+      if (!round) return alert('No active round found.');
+
+      const advancing = [];
+      const eliminatedThisRound = [];
+
+      for (const match of round.matches) {
+        if (match.bye) {
+          match.winnerId = match.teamAId;
+          advancing.push(match.teamAId);
+          continue;
+        }
+
+        const select = document.querySelector(`[data-match-id="${match.id}"]`);
+        const winnerId = select ? select.value : '';
+        if (!winnerId) return alert('Select a winner for every matchup before saving the round.');
+        if (winnerId !== match.teamAId && winnerId !== match.teamBId) return alert('Invalid winner selected.');
+
+        match.winnerId = winnerId;
+        match.loserId = winnerId === match.teamAId ? match.teamBId : match.teamAId;
+        advancing.push(match.winnerId);
+        eliminatedThisRound.push(match.loserId);
+      }
+
+      round.complete = true;
+      bracket.completedRounds.push(round.roundNumber);
+      bracket.eliminationOrder.push(...eliminatedThisRound);
+
+      if (advancing.length === 1) {
+        bracket.championTeamId = advancing[0];
+        const championTeam = getTeamById(evt.id, advancing[0]);
+        bracket.championName = championTeam?.name || 'Champion';
+        finalizeTeamEvent(evt, bracket);
+      } else {
+        bracket.rounds.push(buildRound(advancing, round.roundNumber + 1));
+      }
+
+      syncAll();
+      alert(bracket.championTeamId ? 'Team event complete.' : 'Round saved. Next matchups are ready.');
+    }
+
+    function finalizeTeamEvent(evt, bracket) {
+      resetEventImpact(evt.title);
+
+      const teams = state.teamAssignments[evt.id] || [];
+      const finalOrderIds = [bracket.championTeamId, ...bracket.eliminationOrder.reverse()].filter(Boolean);
+      const rows = finalOrderIds.map(teamId => {
+        const team = teams.find(t => t.id === teamId);
+        return {
+          teamId,
+          teamName: team?.name || 'Unknown Team',
+          members: team?.members || []
+        };
+      });
+
+      state.eventRawResults[evt.title] = rows;
+
+      rows.forEach((row, index) => {
+        const points = index + 1;
+        row.members.forEach(name => {
+          if (!(name in state.participantScores)) return;
+          state.participantScores[name] += points;
+          state.participantEventCount[name] += 1;
+          state.participantEventResults[name][evt.title] = points;
+        });
+      });
+    }
+
     function saveResultsForEvent() {
-      const evt = state.events.find(e => e.id === el.resultEventSelect.value);
+      const evt = getSelectedEvent();
       if (!evt) return alert('Select an event.');
+      if (evt.type === 'team') return alert('Use Create Matchups and Save Team Round for team events.');
       if (state.participants.length === 0) return alert('Add participants first.');
 
       resetEventImpact(evt.title);
 
-      if (evt.type === 'individual') {
-        const rows = [];
-        for (const participant of state.participants) {
-          const input = document.querySelector(`[data-participant="${cssEscape(participant)}"]`);
-          const raw = input ? input.value.trim() : '';
-          if (!raw) continue;
-          let value;
-          if (evt.scoringType === 'timed') {
-            if (!validateTimeFormat(raw)) return alert(`Invalid time for ${participant}. Use MM:SS or MM:SS.xx`);
-            value = timeToSeconds(raw);
-          } else {
-            value = parseFloat(raw);
-            if (Number.isNaN(value)) return alert(`Invalid numeric score for ${participant}.`);
-          }
-          rows.push({ participant, value, raw });
+      const rows = [];
+      for (const participant of state.participants) {
+        const input = document.querySelector(`[data-participant="${cssEscape(participant)}"]`);
+        const raw = input ? input.value.trim() : '';
+        if (!raw) continue;
+        let value;
+        if (evt.scoringType === 'timed') {
+          if (!validateTimeFormat(raw)) return alert(`Invalid time for ${participant}. Use MM:SS or MM:SS.xx`);
+          value = timeToSeconds(raw);
+        } else {
+          value = parseFloat(raw);
+          if (Number.isNaN(value)) return alert(`Invalid numeric score for ${participant}.`);
         }
-        if (rows.length === 0) return alert('Enter at least one result.');
-
-        rows.sort((a, b) => evt.scoringType === 'timed' ? a.value - b.value : b.value - a.value);
-        state.eventRawResults[evt.title] = rows;
-
-        rows.forEach((entry, index) => {
-          const points = index + 1;
-          state.participantScores[entry.participant] += points;
-          state.participantEventCount[entry.participant] += 1;
-          state.participantEventResults[entry.participant][evt.title] = points;
-        });
-      } else {
-        const teams = state.teamAssignments[evt.id] || [];
-        if (teams.length === 0) return alert('Generate teams first for this event.');
-        const rows = [];
-        for (let i = 0; i < teams.length; i++) {
-          const input = document.querySelector(`[data-team-index="${i}"]`);
-          const value = parseInt((input?.value ?? '0').trim(), 10);
-          if (Number.isNaN(value) || value < 0) return alert(`Invalid wins for Team ${i + 1}.`);
-          rows.push({ teamIndex: i, members: teams[i], value });
-        }
-        rows.sort((a, b) => b.value - a.value);
-        state.eventRawResults[evt.title] = rows;
-
-        rows.forEach((teamRow, index) => {
-          const points = index + 1;
-          teamRow.members.forEach(name => {
-            state.participantScores[name] += points;
-            state.participantEventCount[name] += 1;
-            state.participantEventResults[name][evt.title] = points;
-          });
-        });
+        rows.push({ participant, value, raw });
       }
+      if (rows.length === 0) return alert('Enter at least one result.');
+
+      rows.sort((a, b) => evt.scoringType === 'timed' ? a.value - b.value : b.value - a.value);
+      state.eventRawResults[evt.title] = rows;
+
+      rows.forEach((entry, index) => {
+        const points = index + 1;
+        state.participantScores[entry.participant] += points;
+        state.participantEventCount[entry.participant] += 1;
+        state.participantEventResults[entry.participant][evt.title] = points;
+      });
 
       syncAll();
       alert('Results saved for this event.');
@@ -868,6 +1081,7 @@
       if (!confirm(`Remove event "${evt.title}"?`)) return;
       resetEventImpact(evt.title);
       delete state.teamAssignments[eventId];
+      delete state.teamBrackets[eventId];
       state.events = state.events.filter(e => e.id !== eventId);
       state.tieBreakerHierarchy = state.tieBreakerHierarchy.filter(id => id !== eventId);
       if (el.resultEventSelect.value === eventId) el.resultEventSelect.value = '';
@@ -888,10 +1102,12 @@
 
       for (const eventId of Object.keys(state.teamAssignments)) {
         state.teamAssignments[eventId] = state.teamAssignments[eventId]
-          .map(team => team.filter(member => member !== name))
-          .filter(team => team.length > 0);
+          .map(team => ({ ...team, members: team.members.filter(member => member !== name) }))
+          .filter(team => team.members.length > 0);
       }
 
+      delete state.teamBrackets;
+      state.teamBrackets = {};
       rebuildScoresFromRawResults();
       syncAll();
     }
@@ -933,8 +1149,7 @@
             state.participantEventResults[entry.participant][evt.title] = points;
           });
         } else {
-          const sorted = [...rows].sort((a, b) => b.value - a.value);
-          sorted.forEach((teamRow, index) => {
+          rows.forEach((teamRow, index) => {
             const points = index + 1;
             (teamRow.members || []).forEach(name => {
               if (!state.participants.includes(name)) return;
@@ -991,7 +1206,7 @@
     }
 
     function resetEverything() {
-      if (!confirm('Reset everything? This clears events, participants, scores, and saved team assignments in the page state.')) return;
+      if (!confirm('Reset everything? This clears events, participants, scores, teams, and brackets.')) return;
       state = defaultState();
       syncAll();
     }
@@ -1008,7 +1223,8 @@
         participantEventCount: parsed.participantEventCount || {},
         participantEventResults: parsed.participantEventResults || {},
         eventRawResults: parsed.eventRawResults || {},
-        teamAssignments: parsed.teamAssignments || {}
+        teamAssignments: parsed.teamAssignments || {},
+        teamBrackets: parsed.teamBrackets || {}
       };
     }
 
@@ -1038,6 +1254,14 @@
       renderResultInputs();
       renderStandings();
       updateStats();
+    }
+
+    function getSelectedEvent() {
+      return state.events.find(e => e.id === el.resultEventSelect.value);
+    }
+
+    function getTeamById(eventId, teamId) {
+      return (state.teamAssignments[eventId] || []).find(team => team.id === teamId) || null;
     }
 
     function validateTimeFormat(timeString) {

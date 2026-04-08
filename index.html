@@ -348,15 +348,13 @@
             </table>
           </div>
         </div>
-
-        <!-- Other Sections... -->
+        <!-- More Sections like Tie-breakers, Participants etc -->
       </div>
     </div>
   </div>
 
   <script>
     const STORAGE_KEY = 'byo_manager_state_v2';
-
     const defaultState = () => ({
       events: [],
       tieBreakerHierarchy: [],
@@ -370,7 +368,6 @@
     });
 
     let state = defaultState();
-
     const el = {
       eventTitle: document.getElementById('eventTitle'),
       eventType: document.getElementById('eventType'),
@@ -381,7 +378,6 @@
       eventsTableBody: document.querySelector('#eventsTable tbody'),
       eventStructure: document.getElementById('eventStructure'),
       competitionFormat: document.getElementById('competitionFormat'),
-      // Other UI Elements...
     };
 
     el.addEventBtn.addEventListener('click', addEvent);
@@ -401,8 +397,8 @@
         type: el.eventType.value,
         scoringType: isTeam ? 'bracket' : el.scoringType.value,
         participantsPerTeam: isTeam ? Math.max(2, Number(el.teamSize.value || 2)) : null,
-        structure: el.eventStructure.value,  // New field: Single Round or Multiple Round
-        competitionFormat: el.competitionFormat.value,  // New field: Competitive or Team vs. Team
+        structure: el.eventStructure.value,
+        competitionFormat: el.competitionFormat.value,
       };
 
       // Validation for the new fields
@@ -446,8 +442,6 @@
       }
       return rounds;
     }
-
-    // Other functions...
 
     function syncAll() {
       renderEvents();
@@ -513,8 +507,4 @@
 
     function escapeHtml(text) {
       const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-      return String(text).replace(/[&<>"']/g, m => map[m]);
-    }
-
-    function updateStats() {
-     
+      return String(text

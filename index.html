@@ -348,6 +348,14 @@
     const STORAGE_KEY = 'byo_manager_state_v2';
     const defaultState = () => ({
       events: [],
+      tieBreakerHierarchy: [],
+      participants: [],
+      participantScores: {},
+      participantEventCount: {},
+      participantEventResults: {},
+      eventRawResults: {},
+      teamAssignments: {},
+      teamBrackets: {}
     });
 
     let state = defaultState();
@@ -362,7 +370,6 @@
       eventStructure: document.getElementById('eventStructure'),
     };
 
-    // Add Event button functionality
     el.addEventBtn.addEventListener('click', addEvent);
     el.clearAllBtn.addEventListener('click', resetEverything);
 

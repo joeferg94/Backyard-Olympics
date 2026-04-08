@@ -5,7 +5,266 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Backyard Olympics Manager v2</title>
   <style>
-    /* Existing styles... */
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #dbe3ee;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --success: #059669;
+      --warn-bg: #fff7d6;
+      --warn-line: #ecd98b;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #60a5fa);
+      color: white;
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      line-height: 1.45;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 14px;
+      backdrop-filter: blur(6px);
+    }
+
+    .stat .label {
+      font-size: 0.82rem;
+      opacity: 0.88;
+      margin-bottom: 4px;
+    }
+
+    .stat .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .card h2, .card h3 { margin: 0 0 10px; }
+    .muted { color: var(--muted); font-size: 0.94rem; }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 6px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    input, select, button, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid #cfd8e3;
+      background: #fff;
+      font: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 3px solid rgba(37, 99, 235, 0.14);
+      border-color: #8bb3ff;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      transition: 0.18s ease;
+    }
+
+    button:hover { background: var(--primary-dark); }
+    button.secondary { background: #64748b; }
+    button.secondary:hover { background: #475569; }
+    button.ghost {
+      background: #eef4ff;
+      color: #174ea6;
+      border: 1px solid #cfe0ff;
+    }
+    button.ghost:hover { background: #e3eeff; }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: #b91c1c; }
+    button.success { background: var(--success); }
+    button.success:hover { background: #047857; }
+    button.small {
+      width: auto;
+      padding: 7px 10px;
+      font-size: 0.86rem;
+      border-radius: 10px;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e7edf4;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #f2f6fb; font-size: 0.92rem; }
+    tr:hover td { background: #fafcff; }
+
+    .pill-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #eef4ff;
+      color: #174ea6;
+      border: 1px solid #d5e4ff;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.92rem;
+    }
+
+    .notice {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 10px 0;
+      border: 1px solid var(--warn-line);
+      background: var(--warn-bg);
+      color: #5b4a14;
+    }
+
+    .success-box {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 10px 0;
+      border: 1px solid #a7e4cb;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .section-spacer { margin-top: 14px; }
+    .subtle { font-size: 0.86rem; color: var(--muted); }
+
+    .team-box, .match-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fbfdff;
+      margin-top: 10px;
+    }
+
+    .empty {
+      padding: 18px;
+      border: 1px dashed #ccd8e6;
+      border-radius: 14px;
+      color: var(--muted);
+      text-align: center;
+      background: #fafcff;
+    }
+
+    .scroll-x { overflow-x: auto; }
+    .match-grid { display: grid; gap: 12px; }
+    .match-title { font-weight: 700; margin-bottom: 6px; }
+    .bye-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      border: 1px solid #a7e4cb;
+      color: #065f46;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+    .round-summary {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
   </style>
 </head>
 <body>
@@ -91,10 +350,6 @@
         </div>
 
         <!-- Other Sections... -->
-      </div>
-
-      <div>
-        <!-- Standings, Results, etc. -->
       </div>
     </div>
   </div>
@@ -262,17 +517,4 @@
     }
 
     function updateStats() {
-      el.statEvents.textContent = state.events.length;
-      el.statParticipants.textContent = state.participants.length;
-      el.statTieBreakers.textContent = state.tieBreakerHierarchy.length;
-      const completed = state.events.filter(evt => eventHasSavedResults(evt.title)).length;
-      el.statCompleted.textContent = completed;
-    }
-
-    window.removeEventById = removeEventById;
-
-    loadFromBrowser();
-    syncAll();
-  </script>
-</body>
-</html>
+     

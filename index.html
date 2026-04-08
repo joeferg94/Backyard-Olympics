@@ -478,27 +478,4 @@
             <div class="btn-row">
               <button class="small danger" onclick="removeEventById('${evt.id}')">Remove</button>
             </div>
-          </td>
-        `;
-        el.eventsTableBody.appendChild(tr);
-      });
-    }
-
-    function removeEventById(id) {
-      const evt = state.events.find(e => e.id === id);
-      if (!evt) return;
-      if (!confirm(`Remove event "${evt.title}"?`)) return;
-      state.events = state.events.filter(e => e.id !== id);
-      delete state.teamBrackets[id];
-      syncAll();
-    }
-
-    function resetEverything() {
-      if (!confirm('🚨 Reset EVERYTHING? Cannot undo!')) return;
-      state = defaultState();
-      syncAll();
-      alert('✅ Reset complete.');
-    }
-
-    function makeId() {
-      return Math.random().toString(36).substr(2, 
+          </

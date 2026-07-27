@@ -1,0 +1,13 @@
+{
+  "name": "backyard-olympics",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A browser-based manager for individual and bracket-style Backyard Olympics events.",
+  "scripts": {
+    "test": "node --test",
+    "check:syntax": "node scripts/check-inline-scripts.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
